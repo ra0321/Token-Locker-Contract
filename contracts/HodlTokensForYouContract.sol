@@ -4,12 +4,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract HodlTokensForYouContract {
+    event Hodl(address indexed hodler, address token, uint256 amount, uint256 timeLimit);
 
-    event Hodl(address indexed hodler, address token, uint amount, uint timeLimit);
+    event PanicWithdraw(address indexed hodler, address token, uint256 amount, uint256 timediff);
 
-    event PanicSell(address indexed hodler, address token, uint amount, uint timediff);
-
-    event Withdrawal(address indexed hodler, address token, uint amount);
+    event Withdrawal(address indexed hodler, address token, uint256 amount);
 
     struct Hodler {
         address hodlerAddress;
@@ -18,15 +17,21 @@ contract HodlTokensForYouContract {
 
     struct Token {
         bytes32 symbol;
-        uint tokenBalance;
+        uint256 balance;
         address tokenAddress;
-        uint timeLimit;
+        uint256 timeLimit;
     }
+
+    uint256 panicWithdrawalFee = 15;
 
     mapping(address => Hodler) public hodlers;
 
-    function hodlDeposit(address token, byte tokenSymbol, uint256 amount, uint256 timeLimit) public {
-
+    function hodlDeposit(
+        address token,
+        bytes1 tokenSymbol,
+        uint256 amount,
+        uint256 timeLimit
+    ) public {
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;
 
@@ -34,30 +39,33 @@ contract HodlTokensForYouContract {
 
         ERC20(token).transferFrom(msg.sender, address(this), amount);
         Hodl(msg.sender, token, amount, timeLimit);
-
     }
 
     function withdraw(address token) public {
         Hodler storage hodler = hodlers[msg.sender];
-        require(block.timestamp > hodler.tokens[token].timeLimit);
+        require(block.timestamp > hodler.tokens[token].timeLimit, "Unlock time not reached yet.");
 
-        uint amount = hodler.tokens[token].tokenBalance;
-        hodler.tokens[token].tokenBalance = 0;
+        uint256 amount = hodler.tokens[token].balance;
+        hodler.tokens[token].balance = 0;
         ERC20(token).transfer(msg.sender, amount);
 
         Withdrawal(msg.sender, token, amount);
     }
 
-    function panicSell(address token) public {
-        //This function should have a fee for quicker withdrawing without waiting
+    //TODO add amount param to allow user to pick how much he wants to withdraw
+    function panicWithdraw(address token) public {
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;
 
-        uint amount = hodler.tokens[token].tokenBalance;
-        hodler.tokens[token].tokenBalance = 0;
-        ERC20(token).transfer(msg.sender, amount);
+        uint256 feeAmount = (hodler.tokens[token].balance / 100) * panicWithdrawalFee;
+        uint256 withdrawalAmount = hodler.tokens[token].balance - feeAmount;
 
-        PanicSell(msg.sender, token, amount, hodler.tokens[token].timeLimit - block.timestamp);
+        hodler.tokens[token].balance = 0;
+        //Transfers fees to the contract administrator/owner
+        hodlers[address(this)].tokens[token].balance = feeAmount;
+
+        ERC20(token).transfer(msg.sender, withdrawalAmount);
+
+        PanicWithdraw(msg.sender, token, withdrawalAmount, hodler.tokens[token].timeLimit - block.timestamp);
     }
-
 }

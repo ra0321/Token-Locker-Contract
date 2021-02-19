@@ -3,7 +3,7 @@ pragma solidity ^0.7.6;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-contract HodlTokensForYouContract {
+contract HodlTokens {
     event Hodl(address indexed hodler, address token, uint256 amount, uint256 timeLimit);
 
     event PanicWithdraw(address indexed hodler, address token, uint256 amount, uint256 timediff);
@@ -16,7 +16,6 @@ contract HodlTokensForYouContract {
     }
 
     struct Token {
-        bytes32 symbol;
         uint256 balance;
         address tokenAddress;
         uint256 timeLimit;
@@ -28,18 +27,20 @@ contract HodlTokensForYouContract {
 
     function hodlDeposit(
         address token,
-        bytes1 tokenSymbol,
         uint256 amount,
         uint256 timeLimit
     ) public {
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;
 
-        hodlers[msg.sender].tokens[token] = Token(tokenSymbol, amount, token, timeLimit);
+        hodlers[msg.sender].tokens[token] = Token(amount, token, timeLimit);
 
         ERC20(token).transferFrom(msg.sender, address(this), amount);
         Hodl(msg.sender, token, amount, timeLimit);
     }
+
+    //TODO These two functions should be the same or the malicious user could manually withdraw
+    //without time passing by calling this function directly
 
     function withdraw(address token) public {
         Hodler storage hodler = hodlers[msg.sender];
@@ -52,7 +53,6 @@ contract HodlTokensForYouContract {
         Withdrawal(msg.sender, token, amount);
     }
 
-    //TODO add amount param to allow user to pick how much he wants to withdraw
     function panicWithdraw(address token) public {
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;

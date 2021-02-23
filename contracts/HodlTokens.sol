@@ -4,6 +4,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract HodlTokens {
+
+    address public owner;
+
+      constructor (address _owner) {
+        owner = _owner;
+    }
+
+    uint256 panicWithdrawalFee = 15;
+
     event Hodl(address indexed hodler, address token, uint256 amount, uint256 timeLimit);
 
     event PanicWithdraw(address indexed hodler, address token, uint256 amount, uint256 timediff);
@@ -20,8 +29,6 @@ contract HodlTokens {
         address tokenAddress;
         uint256 timeLimit;
     }
-
-    uint256 panicWithdrawalFee = 15;
 
     mapping(address => Hodler) public hodlers;
 
@@ -68,4 +75,9 @@ contract HodlTokens {
 
         PanicWithdraw(msg.sender, token, withdrawalAmount, hodler.tokens[token].timeLimit - block.timestamp);
     }
+
+    function claimFees() public {
+        //
+    }
+
 }

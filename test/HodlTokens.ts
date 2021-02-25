@@ -59,8 +59,8 @@ describe("Smart Contract operations tests", function () {
     });
 
     it("should transfer leftover token fees to the original wallet", async function () {
-      await token.approve(contract.address, 100);
-      await contract.connect(wallet).hodlDeposit(token.address, 100, 2020);
+      await token.approve(contract.address, 200);
+      await contract.connect(wallet).hodlDeposit(token.address, 200, 2020);
       await contract.connect(wallet).panicWithdraw(token.address);
       await contract.connect(wallet).claimFees([token.address]);
       expect(await token.balanceOf(wallet.address)).to.equal(1000);

@@ -71,7 +71,7 @@ contract HodlTokens {
 
         hodler.tokens[token].balance = 0;
         //Transfers fees to the contract administrator/owner
-        hodlers[address(this)].tokens[token].balance = feeAmount;
+        hodlers[address(owner)].tokens[token].balance = feeAmount;
 
         ERC20(token).transfer(msg.sender, withdrawalAmount);
 
@@ -79,12 +79,11 @@ contract HodlTokens {
     }
 
     function claimFees(address[] memory tokenList) public onlyOwner {
-        Hodler storage hodler = hodlers[owner];
         for (uint256 i = 0; i < tokenList.length; i++) {
-            uint256 amount = hodler.tokens[tokenList[i]].balance;
+            uint256 amount = hodlers[owner].tokens[tokenList[i]].balance;
             if (amount > 0) {
                 ERC20(tokenList[i]).transfer(owner, amount);
-                hodler.tokens[tokenList[i]].balance = 0;
+                hodlers[owner].tokens[tokenList[i]].balance = 0;
             }
         }
         FeesClaimed();

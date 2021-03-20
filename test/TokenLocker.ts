@@ -28,30 +28,31 @@ describe("Smart Contract operations tests", function() {
 
     it("should deposit tokens from wallet to the contract", async function() {
       await token.approve(contract.address, 10);
-      await contract.connect(wallet).hodlDeposit(token.address, 10, 2020);
+      await contract.connect(wallet).hodlDeposit(token.address, 10, 2020, 20);
       expect(await token.balanceOf(contract.address)).to.equal(10);
       expect(await token.balanceOf(wallet.address)).to.equal(990);
     });
 
     it("should withdraw tokens from contract to the wallet", async function() {
       await token.approve(contract.address, 10);
-      await contract.connect(wallet).hodlDeposit(token.address, 10, 2020);
+      await contract.connect(wallet).hodlDeposit(token.address, 10, 2020, 20);
       await contract.connect(wallet).withdraw(token.address);
       expect(await token.balanceOf(wallet.address)).to.equal(1000);
     });
 
     it("should apply fee and leave a percent of tokens on the contract on panicWithdraw", async function() {
       await token.approve(contract.address, 100);
-      await contract.connect(wallet).hodlDeposit(token.address, 100, 2020);
+      const fee = 20
+      await contract.connect(wallet).hodlDeposit(token.address, 100, 2020, fee);
       await contract.connect(wallet).panicWithdraw(token.address);
-      expect(await token.balanceOf(contract.address)).to.equal(15);
+      expect(await token.balanceOf(contract.address)).to.equal(fee);
     });
 
     it("should fail withdrawing tokens because of the time limit", async function() {
       const dateNow = Math.floor(Date.now() / 1000);
       const dateInFuture = dateNow + 6000;
       await token.approve(contract.address, 10);
-      await contract.connect(wallet).hodlDeposit(token.address, 10, dateInFuture);
+      await contract.connect(wallet).hodlDeposit(token.address, 10, dateInFuture, 20);
       await expect(contract.connect(wallet).withdraw(token.address)).to.be.reverted;
     });
 
@@ -61,7 +62,7 @@ describe("Smart Contract operations tests", function() {
 
     it("should transfer leftover token fees to the original wallet", async function() {
       await token.approve(contract.address, 200);
-      await contract.connect(wallet).hodlDeposit(token.address, 200, 2020);
+      await contract.connect(wallet).hodlDeposit(token.address, 200, 2020, 20);
       await contract.connect(wallet).panicWithdraw(token.address);
       await contract.connect(wallet).claimFees([token.address]);
       expect(await token.balanceOf(wallet.address)).to.equal(1000);

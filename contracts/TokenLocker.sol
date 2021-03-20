@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract TokenLocker {
     address public owner;
-    uint256 panicWithdrawalFee = 15;
 
     constructor(address _owner) {
         owner = _owner;
@@ -16,7 +15,7 @@ contract TokenLocker {
         _;
     }
 
-    event Hodl(address indexed hodler, address token, uint256 amount, uint256 unlockTime);
+    event Hodl(address indexed hodler, address token, uint256 amount, uint256 unlockTime, uint256 penaltyFee);
 
     event PanicWithdraw(address indexed hodler, address token, uint256 amount, uint256 timediff);
 
@@ -33,6 +32,7 @@ contract TokenLocker {
         uint256 balance;
         address tokenAddress;
         uint256 unlockTime;
+        uint256 penaltyFee;
     }
 
     mapping(address => Hodler) public hodlers;
@@ -40,15 +40,16 @@ contract TokenLocker {
     function hodlDeposit(
         address token,
         uint256 amount,
-        uint256 unlockTime
+        uint256 unlockTime,
+        uint256 penaltyFee
     ) public {
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;
 
-        hodlers[msg.sender].tokens[token] = Token(amount, token, unlockTime);
+        hodlers[msg.sender].tokens[token] = Token(amount, token, unlockTime, penaltyFee);
 
         ERC20(token).transferFrom(msg.sender, address(this), amount);
-        Hodl(msg.sender, token, amount, unlockTime);
+        Hodl(msg.sender, token, amount, unlockTime, penaltyFee);
     }
 
     function withdraw(address token) public {
@@ -66,7 +67,7 @@ contract TokenLocker {
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;
 
-        uint256 feeAmount = (hodler.tokens[token].balance / 100) * panicWithdrawalFee;
+        uint256 feeAmount = (hodler.tokens[token].balance / 100) * hodler.tokens[token].penaltyFee;
         uint256 withdrawalAmount = hodler.tokens[token].balance - feeAmount;
 
         hodler.tokens[token].balance = 0;

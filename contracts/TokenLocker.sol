@@ -43,6 +43,8 @@ contract TokenLocker {
         uint256 unlockTime,
         uint256 penaltyFee
     ) public {
+        require(penaltyFee >= 10, "Minimal penalty fee is 10.");
+
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;
 
@@ -54,6 +56,7 @@ contract TokenLocker {
 
     function withdraw(address token) public {
         Hodler storage hodler = hodlers[msg.sender];
+        require(msg.sender == hodler.hodlerAddress, "Only available to the token owner.");
         require(block.timestamp > hodler.tokens[token].unlockTime, "Unlock time not reached yet.");
 
         uint256 amount = hodler.tokens[token].balance;
@@ -65,7 +68,7 @@ contract TokenLocker {
 
     function panicWithdraw(address token) public {
         Hodler storage hodler = hodlers[msg.sender];
-        hodler.hodlerAddress = msg.sender;
+        require(msg.sender == hodler.hodlerAddress, "Only available to the token owner.");
 
         uint256 feeAmount = (hodler.tokens[token].balance / 100) * hodler.tokens[token].penaltyFee;
         uint256 withdrawalAmount = hodler.tokens[token].balance - feeAmount;

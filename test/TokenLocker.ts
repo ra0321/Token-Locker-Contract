@@ -8,7 +8,7 @@ import { MockProvider } from "ethereum-waffle";
 const { deployContract } = hre.waffle;
 
 describe("Smart Contract operations tests", function() {
-  const [wallet, otherWallet] = new MockProvider({
+  const [wallet, otherWallet, thirdWallet] = new MockProvider({
     ganacheOptions: {
       gasLimit: 10000000,
       time: new Date(),
@@ -33,6 +33,11 @@ describe("Smart Contract operations tests", function() {
       expect(await token.balanceOf(wallet.address)).to.equal(990);
     });
 
+    it("should fail because of a too small fee", async function() {
+      await token.approve(contract.address, 10);
+      await expect(contract.connect(wallet).hodlDeposit(token.address, 10, 2020, 0)).to.be.reverted;
+    });
+
     it("should withdraw tokens from contract to the wallet", async function() {
       await token.approve(contract.address, 10);
       await contract.connect(wallet).hodlDeposit(token.address, 10, 2020, 20);
@@ -54,6 +59,10 @@ describe("Smart Contract operations tests", function() {
       await token.approve(contract.address, 10);
       await contract.connect(wallet).hodlDeposit(token.address, 10, dateInFuture, 20);
       await expect(contract.connect(wallet).withdraw(token.address)).to.be.reverted;
+    });
+
+    it("should fail withdraw because it's not the token owner", async function() {
+      await expect(contract.connect(thirdWallet).withdraw(token.address)).to.be.reverted;
     });
 
     it("should fail because it's not the owner", async function() {

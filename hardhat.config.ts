@@ -14,7 +14,7 @@ import "solidity-coverage";
 const chainIds = {
   ganache: 1337,
   goerli: 5,
-  hardhat: 31337,
+  hardhat: 1337,
   kovan: 42,
   mainnet: 1,
   rinkeby: 4,

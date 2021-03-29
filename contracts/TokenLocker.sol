@@ -1,7 +1,7 @@
-pragma solidity ^0.7.6;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract TokenLocker {
     address public owner;
@@ -17,7 +17,7 @@ contract TokenLocker {
 
     event Hodl(address indexed hodler, address token, uint256 amount, uint256 unlockTime, uint256 penaltyFee);
 
-    event PanicWithdraw(address indexed hodler, address token, uint256 amount, uint256 timediff);
+    event PanicWithdraw(address indexed hodler, address token, uint256 amount, uint256 unlockTime);
 
     event Withdrawal(address indexed hodler, address token, uint256 amount);
 
@@ -51,7 +51,7 @@ contract TokenLocker {
         hodlers[msg.sender].tokens[token] = Token(amount, token, unlockTime, penaltyFee);
 
         ERC20(token).transferFrom(msg.sender, address(this), amount);
-        Hodl(msg.sender, token, amount, unlockTime, penaltyFee);
+        emit Hodl(msg.sender, token, amount, unlockTime, penaltyFee);
     }
 
     function withdraw(address token) public {
@@ -63,7 +63,7 @@ contract TokenLocker {
         hodler.tokens[token].balance = 0;
         ERC20(token).transfer(msg.sender, amount);
 
-        Withdrawal(msg.sender, token, amount);
+        emit Withdrawal(msg.sender, token, amount);
     }
 
     function panicWithdraw(address token) public {
@@ -79,17 +79,25 @@ contract TokenLocker {
 
         ERC20(token).transfer(msg.sender, withdrawalAmount);
 
-        PanicWithdraw(msg.sender, token, withdrawalAmount, hodler.tokens[token].unlockTime - block.timestamp);
+        emit PanicWithdraw(msg.sender, token, withdrawalAmount, hodler.tokens[token].unlockTime);
     }
 
-    function claimFees(address[] memory tokenList) public onlyOwner {
+    function claimTokenListFees(address[] memory tokenList) public onlyOwner {
         for (uint256 i = 0; i < tokenList.length; i++) {
             uint256 amount = hodlers[owner].tokens[tokenList[i]].balance;
             if (amount > 0) {
-                ERC20(tokenList[i]).transfer(owner, amount);
                 hodlers[owner].tokens[tokenList[i]].balance = 0;
+                ERC20(tokenList[i]).transfer(owner, amount);
             }
         }
-        FeesClaimed();
+        emit FeesClaimed();
+    }
+
+    function claimTokenFees(address token) public onlyOwner {
+        uint256 amount = hodlers[owner].tokens[token].balance;
+        require(amount > 0, "No fees available for claiming.");
+        hodlers[owner].tokens[token].balance = 0;
+        ERC20(token).transfer(owner, amount);
+        emit FeesClaimed();
     }
 }

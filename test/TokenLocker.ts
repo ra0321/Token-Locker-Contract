@@ -31,6 +31,15 @@ describe("Token Locker Smart Contract operations tests", function() {
       expect(await token.balanceOf(wallet.address)).to.equal(990);
     });
 
+  it("should deposit tokens multiple times from wallet to the contract", async function() {
+    await token.approve(contract.address, 10);
+    await contract.connect(wallet).hodlDeposit(token.address, 10, 2020, 20);
+    await token.approve(contract.address, 20);
+    await contract.connect(wallet).hodlDeposit(token.address, 20, 2022, 25);
+    expect(await token.balanceOf(contract.address)).to.equal(30);
+    expect(await token.balanceOf(wallet.address)).to.equal(970);
+  });
+
     it("should fail because of a too small fee", async function() {
       await token.approve(contract.address, 10);
       await expect(contract.connect(wallet).hodlDeposit(token.address, 10, 2020, 0)).to.be.reverted;

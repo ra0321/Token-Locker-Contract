@@ -15,7 +15,7 @@ contract TokenLocker {
         _;
     }
 
-    event Hodl(address indexed hodler, address token, uint256 amount, uint256 unlockTime, uint256 penaltyFee);
+    event Hodl(address indexed hodler, address token, uint256 amount, uint256 unlockTime, uint256 penaltyFeePercentage);
 
     event PanicWithdraw(address indexed hodler, address token, uint256 amount, uint256 unlockTime);
 
@@ -32,7 +32,7 @@ contract TokenLocker {
         uint256 balance;
         address tokenAddress;
         uint256 unlockTime;
-        uint256 penaltyFee;
+        uint256 penaltyFeePercentage;
     }
 
     mapping(address => Hodler) public hodlers;
@@ -41,17 +41,27 @@ contract TokenLocker {
         address token,
         uint256 amount,
         uint256 unlockTime,
-        uint256 penaltyFee
+        uint256 penaltyFeePercentage
     ) public {
-        require(penaltyFee >= 10, "Minimal penalty fee is 10.");
+        require(penaltyFeePercentage >= 10, "Minimal penalty fee is 10%.");
 
         Hodler storage hodler = hodlers[msg.sender];
         hodler.hodlerAddress = msg.sender;
-
-        hodlers[msg.sender].tokens[token] = Token(amount, token, unlockTime, penaltyFee);
-
+        Token storage lockedToken = hodlers[msg.sender].tokens[token];
+        if (lockedToken.balance > 0) {
+            lockedToken.balance += amount;
+            if (lockedToken.penaltyFeePercentage < penaltyFeePercentage) {
+                lockedToken.penaltyFeePercentage = penaltyFeePercentage;
+            }
+            if (lockedToken.unlockTime < unlockTime) {
+                lockedToken.unlockTime = unlockTime;
+            }
+        }
+        else {
+            hodlers[msg.sender].tokens[token] = Token(amount, token, unlockTime, penaltyFeePercentage);
+        }
         ERC20(token).transferFrom(msg.sender, address(this), amount);
-        emit Hodl(msg.sender, token, amount, unlockTime, penaltyFee);
+        emit Hodl(msg.sender, token, amount, unlockTime, penaltyFeePercentage);
     }
 
     function withdraw(address token) public {
@@ -70,7 +80,7 @@ contract TokenLocker {
         Hodler storage hodler = hodlers[msg.sender];
         require(msg.sender == hodler.hodlerAddress, "Only available to the token owner.");
 
-        uint256 feeAmount = (hodler.tokens[token].balance / 100) * hodler.tokens[token].penaltyFee;
+        uint256 feeAmount = (hodler.tokens[token].balance / 100) * hodler.tokens[token].penaltyFeePercentage;
         uint256 withdrawalAmount = hodler.tokens[token].balance - feeAmount;
 
         hodler.tokens[token].balance = 0;

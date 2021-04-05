@@ -12,15 +12,15 @@ async function main(): Promise<void> {
   // await run("compile");
 
   // We get the contract to deploy
-  const BasicToken: ContractFactory = await ethers.getContractFactory("BasicToken");
-  const basicToken: Contract = await BasicToken.deploy(ethers.utils.parseUnits("50000000000000000000"));
-  await basicToken.deployed();
+  // const BasicToken: ContractFactory = await ethers.getContractFactory("BasicToken");
+  // const basicToken: Contract = await BasicToken.deploy(ethers.utils.parseUnits("50000000000000000000"));
+  // await basicToken.deployed();
 
   const TokenLocker: ContractFactory = await ethers.getContractFactory("TokenLocker");
-  const tokenLocker: Contract = await TokenLocker.deploy("0x7429c1c1B102296448dfaddf5296709Dc5766c03");
+  const tokenLocker: Contract = await TokenLocker.deploy("0x400Fc9C7F01Df3aa919659De434E0c584e68CB29");
   await tokenLocker.deployed();
 
-  console.log("BasicToken contract deployed to: ", basicToken.address);
+  // console.log("BasicToken contract deployed to: ", basicToken.address);
   console.log("TokenLocker contract deployed to: ", tokenLocker.address);
 }
 

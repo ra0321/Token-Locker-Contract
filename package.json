@@ -1,11 +1,7 @@
 {
   "name": "token-locker-contract",
-  "description": "Setup for writing Solidity smart contracts",
+  "description": "Solidity smart contract for locking ERC20 token",
   "version": "1.0.0",
-  "author": {
-    "name": "Stevan Bogosavljevic",
-    "url": "https://stevyhacker.github.io"
-  },
   "devDependencies": {
     "@commitlint/cli": "^9.1.2",
     "@commitlint/config-conventional": "^9.1.2",
